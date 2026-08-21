@@ -56,7 +56,7 @@ export function OutputSection({ output, isLoading }: OutputSectionProps) {
         </div>
       </div>
 
-      <div className="min-h-[160px] rounded-xl border border-input bg-card p-4">
+      <div id="translation-output" className="min-h-[160px] rounded-xl border border-input bg-card p-4">
         {isLoading ? (
           <div className="flex h-32 items-center justify-center gap-3 text-muted-foreground">
             <span className="h-6 w-6 animate-spin rounded-full border-4 border-muted border-t-primary" />
