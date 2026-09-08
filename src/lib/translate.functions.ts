@@ -9,8 +9,11 @@ import { z } from "zod";
  */
 
 // MyMemory language codes (ISO 639) for the languages we offer.
-// Ho, Mundari and Kurukh are not yet supported by MyMemory.
-export const UNSUPPORTED_LANGUAGES = ["ho", "mun", "kru"] as const;
+// MyMemory does not reliably support these Jharkhand regional languages.
+export const UNSUPPORTED_LANGUAGES = ["sat", "ho", "mun", "kru"] as const;
+
+export const UNSUPPORTED_LANGUAGE_MESSAGE =
+  "This language isn't available in the demo translation service yet — try Hindi or English.";
 
 const inputSchema = z.object({
   text: z.string().min(1).max(5000),
@@ -77,36 +80,39 @@ async function translateChunk(
   text: string,
   langpair: string,
 ): Promise<string> {
-  const url =
-    "https://api.mymemory.translated.net/get" +
-    `?q=${encodeURIComponent(text)}` +
-    `&langpair=${encodeURIComponent(langpair)}`;
+  const url = new URL("https://api.mymemory.translated.net/get");
+  url.searchParams.set("q", text);
+  url.searchParams.set("langpair", langpair);
 
-  const response = await fetch(url, {
+  const response = await fetch(url.toString(), {
     headers: { Accept: "application/json" },
   });
 
   if (!response.ok) {
     console.error("MyMemory error", response.status);
-    throw new Error("Translation service is unavailable. Please try again.");
+    throw new Error(
+      `The demo translation service returned HTTP ${response.status}. Please try again later.`,
+    );
   }
 
   const json = (await response.json()) as {
     responseStatus?: number | string;
     responseDetails?: string;
+    quotaFinished?: boolean;
     responseData?: { translatedText?: string };
   };
 
   const status = Number(json.responseStatus ?? 200);
+  if (json.quotaFinished === true) {
+    throw new Error(
+      "The demo translation service quota has been reached. Please try again later.",
+    );
+  }
+
   if (status !== 200) {
     console.error("MyMemory rejected request:", json.responseDetails);
-    if (status === 403 || status === 429) {
-      throw new Error(
-        "The free translation limit was reached. Please try again later.",
-      );
-    }
     throw new Error(
-      "This language isn't available for automatic translation yet.",
+      `The demo translation service returned status ${status}. Please try again later.`,
     );
   }
 
@@ -120,6 +126,14 @@ async function translateChunk(
 export const translateTextFn = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }) => {
+    if (
+      (UNSUPPORTED_LANGUAGES as readonly string[]).includes(
+        data.targetLanguage,
+      )
+    ) {
+      throw new Error(UNSUPPORTED_LANGUAGE_MESSAGE);
+    }
+
     const source = detectSourceLanguage(data.text);
     const langpair =
       source === data.targetLanguage
