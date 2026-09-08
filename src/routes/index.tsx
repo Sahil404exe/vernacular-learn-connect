@@ -8,7 +8,7 @@ import { InputSection } from "@/components/InputSection";
 import { LanguageSelector, type LanguageCode } from "@/components/LanguageSelector";
 import { OutputSection } from "@/components/OutputSection";
 import { HowItWorks } from "@/components/HowItWorks";
-import { translateTextFn, GOOGLE_UNSUPPORTED } from "@/lib/translate.functions";
+import { translateTextFn, UNSUPPORTED_LANGUAGES } from "@/lib/translate.functions";
 
 // Demo sample shown in the input box so the prototype is ready to use immediately.
 const SAMPLE_TEXT = "The sun rises in the east. Plants need water and sunlight to grow.";
@@ -60,8 +60,8 @@ function Index() {
     setOutputText("");
     setErrorMessage(null);
 
-    // Google Translate has no model for these languages yet.
-    if ((GOOGLE_UNSUPPORTED as readonly string[]).includes(targetLang)) {
+    // MyMemory has no model for these languages yet.
+    if ((UNSUPPORTED_LANGUAGES as readonly string[]).includes(targetLang)) {
       setIsLoading(false);
       setErrorMessage(
         "Automatic translation for this language isn't available yet. Try Santhali, Hindi or English.",
