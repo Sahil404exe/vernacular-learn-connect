@@ -1,8 +1,10 @@
 import { GraduationCap } from "lucide-react";
 
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 /**
- * Navbar — fixed app header showing the brand name and tagline.
- * Uses a friendly graduation-cap icon paired with large, readable text.
+ * Navbar — fixed app header showing the brand name, tagline and the
+ * light/dark theme switch.
  */
 export function Navbar() {
   return (
@@ -13,14 +15,16 @@ export function Navbar() {
           <GraduationCap className="h-6 w-6" aria-hidden="true" />
         </div>
 
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             VernacuLearn
           </h1>
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="truncate text-sm font-medium text-muted-foreground">
             Bringing lessons home — in every child's own language
           </p>
         </div>
+
+        <ThemeToggle />
       </div>
     </header>
   );

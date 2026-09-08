@@ -5,7 +5,7 @@ import { Languages, ChevronDown } from "lucide-react";
  * English and Hindi are also listed so teachers can convert back-and-forth.
  */
 export const LANGUAGES = [
-  { code: "san", label: "Santhali" },
+  { code: "sat", label: "Santhali" },
   { code: "ho", label: "Ho" },
   { code: "mun", label: "Mundari" },
   { code: "kru", label: "Kurukh" },

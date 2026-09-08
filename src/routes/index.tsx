@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import { Navbar } from "@/components/Navbar";
 import { InputSection } from "@/components/InputSection";
 import { LanguageSelector, type LanguageCode } from "@/components/LanguageSelector";
 import { OutputSection } from "@/components/OutputSection";
 import { HowItWorks } from "@/components/HowItWorks";
-import { translateText } from "@/lib/translate";
+import { translateTextFn, GOOGLE_UNSUPPORTED } from "@/lib/translate.functions";
 
 // Demo sample shown in the input box so the prototype is ready to use immediately.
 const SAMPLE_TEXT = "The sun rises in the east. Plants need water and sunlight to grow.";
@@ -44,23 +46,40 @@ export const Route = createFileRoute("/")({
  */
 function Index() {
   const [inputText, setInputText] = useState(SAMPLE_TEXT);
-  const [targetLang, setTargetLang] = useState<LanguageCode>("san");
+  const [targetLang, setTargetLang] = useState<LanguageCode>("sat");
   const [outputText, setOutputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const translate = useServerFn(translateTextFn);
 
   const handleTranslate = async () => {
     if (!inputText.trim()) return;
 
     setIsLoading(true);
     setOutputText("");
+    setErrorMessage(null);
+
+    // Google Translate has no model for these languages yet.
+    if ((GOOGLE_UNSUPPORTED as readonly string[]).includes(targetLang)) {
+      setIsLoading(false);
+      setErrorMessage(
+        "Automatic translation for this language isn't available yet. Try Santhali, Hindi or English.",
+      );
+      return;
+    }
 
     try {
-      const result = await translateText(inputText, targetLang);
-      setOutputText(result);
+      const result = await translate({
+        data: { text: inputText.trim(), targetLanguage: targetLang },
+      });
+      setOutputText(result.translatedText);
     } catch (error) {
-      // For a hackathon demo, a simple message is enough; in production this
-      // should be handled with a proper error boundary or toast.
-      setOutputText("Translation failed. Please try again.");
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Translation failed. Please check your connection and try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -72,22 +91,22 @@ function Index() {
 
       <main className="flex-1">
         {/* Hero + translator area */}
-        <section className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
+        <section className="mx-auto max-w-5xl px-4 py-10 sm:py-14">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
               Bringing lessons home — in every child's own language
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-              Paste a lesson, choose a language, and get a simple translation
-              teachers can use in class.
+              Paste a lesson or upload a file, choose a language, and get a
+              simple translation teachers can use in class.
             </p>
           </div>
 
           {/* Main translator card */}
-          <div className="mt-8 rounded-3xl border border-border bg-card p-6 shadow-lg sm:mt-12 sm:p-8">
-            <div className="grid gap-6 lg:grid-cols-[1fr_auto_1fr]">
+          <div className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-lg sm:p-8">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto_1fr] lg:gap-6">
               {/* Left column: input, language selector, translate button */}
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <InputSection value={inputText} onChange={setInputText} />
                 <LanguageSelector
                   value={targetLang}
@@ -97,8 +116,11 @@ function Index() {
                   type="button"
                   onClick={handleTranslate}
                   disabled={isLoading || !inputText.trim()}
-                  className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-bold text-primary-foreground shadow-md transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-lg font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
                 >
+                  {isLoading && (
+                    <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                  )}
                   {isLoading ? "Translating..." : "Translate"}
                 </button>
               </div>
@@ -109,7 +131,11 @@ function Index() {
               </div>
 
               {/* Right column: output */}
-              <OutputSection output={outputText} isLoading={isLoading} />
+              <OutputSection
+                output={outputText}
+                isLoading={isLoading}
+                error={errorMessage}
+              />
             </div>
           </div>
         </section>
